@@ -58,7 +58,7 @@ sudo apt install -y python3 python3-venv python3-pip nginx certbot python3-certb
 ```bash
 sudo mkdir -p /opt/multisub
 sudo chown -R $USER:$USER /opt/multisub
-git clone <URL_ВАШЕГО_РЕПОЗИТОРИЯ> /opt/multisub
+git clone https://github.com/avarabey/multisub.git /opt/multisub
 cd /opt/multisub
 ```
 
