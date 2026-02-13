@@ -77,7 +77,7 @@ def test_merges_base64_and_plain_sources(monkeypatch, client):
 
 
 def test_index_uses_configured_public_base_url(client):
-    app.config["PUBLIC_BASE_URL"] = "https://ffknd.ru/"
+    app.config["PUBLIC_BASE_URL"] = "https://example.com/"
     with app.app_context():
         ms = Multisub(title="public-url")
         db.session.add(ms)
@@ -87,7 +87,7 @@ def test_index_uses_configured_public_base_url(client):
     resp = client.get("/")
     body = resp.get_data(as_text=True)
     assert resp.status_code == 200
-    assert f"https://ffknd.ru/sub/{uid}" in body
+    assert f"https://example.com/sub/{uid}" in body
 
 
 def test_index_falls_back_to_request_host(client):

@@ -1,44 +1,48 @@
 # MultiSub
 
-Веб-сервис для объединения нескольких подписок (3x-ui и совместимые источники) в одну мультиподписку для клиентов Shadowrocket, v2rayTun, V2Box и других V2Ray-совместимых приложений.
+Language: **English** | [Русский](./readme.ru.md)
 
-## Что уже реализовано
+A web service that merges multiple subscription sources (3x-ui and compatible providers) into a single subscription URL for Shadowrocket, v2rayTun, V2Box, and other V2Ray-compatible clients.
 
-- Создание, редактирование и удаление мультиподписок через веб-интерфейс.
-- Добавление/удаление URL исходных подписок.
-- Выдача единой ссылки вида `/sub/<uuid>`.
-- Агрегация как plain-текста, так и base64-подписок.
-- Дедупликация узлов при объединении.
-- Настраиваемый публичный адрес сервера через `PUBLIC_BASE_URL`.
+## Implemented Features
 
-## Технологии
+- Create, edit, and delete multi-subscriptions via web UI.
+- Add/remove source subscription URLs.
+- Serve one merged URL in the format `/sub/<uuid>`.
+- Handle both plain-text and base64 source subscriptions.
+- Deduplicate nodes during merge.
+- Configurable public base URL via `PUBLIC_BASE_URL`.
+
+## Stack
 
 - Python 3.10+
 - Flask
 - SQLAlchemy
 - httpx
-- SQLite (по умолчанию)
+- SQLite (default)
 
-## Структура
+## Project Structure
 
-- `app.py` - Flask-приложение, маршруты и логика агрегации.
-- `templates/index.html` - список мультиподписок.
-- `templates/edit.html` - форма создания/редактирования.
-- `tests/test_app.py` - тесты агрегации и генерации публичных ссылок.
+- `app.py` - Flask app, routes, and merge logic.
+- `templates/index.html` - multi-subscription list page.
+- `templates/edit.html` - create/edit form.
+- `tests/test_app.py` - aggregation and public URL tests.
+- `scripts/healthcheck.sh` - health probe with self-heal restart.
+- `deploy/systemd/*.service|*.timer` - systemd units.
 
-## Переменные окружения
+## Environment Variables
 
-- `DATABASE_URL` - строка подключения к БД (по умолчанию локальный SQLite-файл `multisub.db`).
-- `PUBLIC_BASE_URL` - публичный базовый URL для ссылок в UI.
+- `DATABASE_URL` - DB connection string (default: local `multisub.db`).
+- `PUBLIC_BASE_URL` - public base URL used in UI-generated subscription links.
 
-Примеры:
+Examples:
 
-- Домен: `PUBLIC_BASE_URL=https://ffknd.ru`
-- Только IP: `PUBLIC_BASE_URL=http://203.0.113.10`
+- Domain: `PUBLIC_BASE_URL=https://example.com`
+- IP-only server: `PUBLIC_BASE_URL=http://203.0.113.10`
 
-Если `PUBLIC_BASE_URL` не задан, приложение использует адрес из текущего HTTP-запроса (`Host`), поэтому с IP тоже будет работать.
+If `PUBLIC_BASE_URL` is not set, the app falls back to request host (`Host` header), so IP-only deployment still works.
 
-## Локальный запуск
+## Local Run
 
 ```bash
 python3 -m venv .venv
@@ -47,26 +51,26 @@ pip install -r requirements.txt
 python app.py
 ```
 
-Открыть: `http://127.0.0.1:5000`
+Open: `http://127.0.0.1:5000`
 
-Запуск тестов:
+Run tests:
 
 ```bash
 .venv/bin/pytest -q
 ```
 
-## Развертывание на VDS (Ubuntu 22.04)
+## Deploy on VDS (Ubuntu 22.04)
 
-Ниже инструкция для продакшн-схемы: `gunicorn + systemd + nginx`.
+Production layout: `gunicorn + systemd + nginx`.
 
-### 1. Подготовка сервера
+### 1. Prepare Server
 
 ```bash
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y python3 python3-venv python3-pip nginx certbot python3-certbot-nginx git
 ```
 
-### 2. Клонирование проекта
+### 2. Clone Project
 
 ```bash
 sudo mkdir -p /opt/multisub
@@ -75,7 +79,7 @@ git clone https://github.com/avarabey/multisub.git /opt/multisub
 cd /opt/multisub
 ```
 
-### 3. Виртуальное окружение и зависимости
+### 3. Create Virtualenv and Install Dependencies
 
 ```bash
 python3 -m venv .venv
@@ -84,80 +88,58 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 4. Проверка приложения
+### 4. Validate App
 
 ```bash
 .venv/bin/pytest -q
 ```
 
-Если тесты прошли, продолжаем.
+### 5. Configure Public URL
 
-### 5. Настройка публичного URL (обязательно проверить)
+Choose one:
 
-Выберите один вариант:
+- Domain: `PUBLIC_BASE_URL=https://example.com`
+- IP only: `PUBLIC_BASE_URL=http://<YOUR_VDS_IP>`
 
-- Если есть домен: `PUBLIC_BASE_URL=https://ffknd.ru`
-- Если есть только IP: `PUBLIC_BASE_URL=http://<IP_ВАШЕЙ_VDS>`
+### 6. Install Main systemd Service (Autostart)
 
-Это значение влияет на ссылку, которую пользователи копируют в UI.
-
-### 6. systemd-сервис (автозапуск)
-
-В проекте уже есть шаблон: `deploy/systemd/multisub.service`.
-Скопируйте его:
+Project template: `deploy/systemd/multisub.service`.
 
 ```bash
 sudo cp /opt/multisub/deploy/systemd/multisub.service /etc/systemd/system/multisub.service
 ```
 
-Содержимое файла:
+If needed, edit `/etc/systemd/system/multisub.service` and set:
 
 ```ini
-[Unit]
-Description=MultiSub Flask Service
-After=network.target
-
-[Service]
-User=www-data
-Group=www-data
-WorkingDirectory=/opt/multisub
-Environment="PATH=/opt/multisub/.venv/bin"
-Environment="DATABASE_URL=sqlite:////opt/multisub/multisub.db"
-Environment="PUBLIC_BASE_URL=https://ffknd.ru"
-ExecStart=/opt/multisub/.venv/bin/gunicorn --workers 2 --bind 127.0.0.1:8000 app:app
-Restart=always
-RestartSec=3
-
-[Install]
-WantedBy=multi-user.target
+Environment="PUBLIC_BASE_URL=https://example.com"
 ```
 
-Если разворачиваете по IP без домена, замените строку:
+or
 
 ```ini
-Environment="PUBLIC_BASE_URL=http://<IP_ВАШЕЙ_VDS>"
+Environment="PUBLIC_BASE_URL=http://<YOUR_VDS_IP>"
 ```
 
-Выдать доступ, включить автозапуск и запустить:
+Enable autostart and run:
 
 ```bash
 sudo chown -R www-data:www-data /opt/multisub
 sudo systemctl daemon-reload
-sudo systemctl enable multisub
-sudo systemctl start multisub
+sudo systemctl enable --now multisub
 sudo systemctl status multisub --no-pager
 ```
 
-### 7. Конфиг nginx
+### 7. Configure Nginx
 
-Создать файл `/etc/nginx/sites-available/multisub`.
+Create `/etc/nginx/sites-available/multisub`.
 
-Вариант A (домен `ffknd.ru`):
+Domain variant:
 
 ```nginx
 server {
     listen 80;
-    server_name ffknd.ru www.ffknd.ru;
+    server_name example.com www.example.com;
 
     client_max_body_size 10m;
 
@@ -171,7 +153,7 @@ server {
 }
 ```
 
-Вариант B (только IP):
+IP-only variant:
 
 ```nginx
 server {
@@ -190,7 +172,7 @@ server {
 }
 ```
 
-Активировать сайт:
+Enable and reload:
 
 ```bash
 sudo ln -s /etc/nginx/sites-available/multisub /etc/nginx/sites-enabled/multisub
@@ -198,85 +180,68 @@ sudo nginx -t
 sudo systemctl reload nginx
 ```
 
-### 8. HTTPS (только если есть домен)
-
-Если используете `ffknd.ru`, включите TLS:
+### 8. TLS (Domain Only)
 
 ```bash
-sudo certbot --nginx -d ffknd.ru -d www.ffknd.ru
+sudo certbot --nginx -d example.com -d www.example.com
 sudo certbot renew --dry-run
 ```
 
-Если работаете только по IP, проект будет доступен по HTTP (`http://<IP_ВАШЕЙ_VDS>`) и тоже полностью функционален.
+If you only have IP, run over HTTP: `http://<YOUR_VDS_IP>`.
 
-### 9. Периодический healthcheck с авто-перезапуском
+### 9. Periodic Healthcheck + Auto-Restart
 
-В проекте уже подготовлены файлы:
+Prepared files:
 
 - `scripts/healthcheck.sh`
 - `deploy/systemd/multisub-healthcheck.service`
 - `deploy/systemd/multisub-healthcheck.timer`
 
-Установка на сервер:
+Install:
 
 ```bash
 sudo cp /opt/multisub/scripts/healthcheck.sh /usr/local/bin/multisub-healthcheck.sh
 sudo chmod +x /usr/local/bin/multisub-healthcheck.sh
-
-sudo cp /opt/multisub/deploy/systemd/multisub-healthcheck.service /etc/systemd/system/multisub-healthcheck.service
-sudo cp /opt/multisub/deploy/systemd/multisub-healthcheck.timer /etc/systemd/system/multisub-healthcheck.timer
-
+sudo cp /opt/multisub/deploy/systemd/multisub-healthcheck.service /etc/systemd/system/
+sudo cp /opt/multisub/deploy/systemd/multisub-healthcheck.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now multisub-healthcheck.timer
 sudo systemctl status multisub-healthcheck.timer --no-pager
 ```
 
-Что делает healthcheck:
+Healthcheck behavior:
 
-- Каждую минуту проверяет `http://127.0.0.1:8000/`.
-- Если сервис не отвечает, выполняет `systemctl restart multisub.service`.
-- Пишет события в `journald` с тегом `multisub-healthcheck`.
+- Runs every minute.
+- Checks `http://127.0.0.1:8000/`.
+- If unhealthy, restarts `multisub.service`.
 
-Проверка логов:
+Logs:
 
 ```bash
 sudo journalctl -u multisub-healthcheck.service -n 50 --no-pager
 ```
 
-## Проверка после деплоя
+## Routes
 
-- Открыть `https://ffknd.ru` (или `http://<IP_ВАШЕЙ_VDS>`)
-- Создать тестовую мультиподписку
-- Добавить 1-2 URL подписок
-- Скопировать ссылку `/sub/<uuid>` и проверить импорт в клиенте
+- `GET /` - list multisubscriptions
+- `GET /create` - create form
+- `POST /create` - create entity
+- `GET /edit/<id>` - edit form
+- `POST /edit/<id>` - update entity
+- `POST /delete/<id>` - delete entity
+- `GET /sub/<uuid>` - merged subscription response (base64)
 
-## Маршруты приложения
+## Quick 502 Diagnostics
 
-- `GET /` - список мультиподписок
-- `GET /create` - форма создания
-- `POST /create` - создание
-- `GET /edit/<id>` - форма редактирования
-- `POST /edit/<id>` - обновление
-- `POST /delete/<id>` - удаление
-- `GET /sub/<uuid>` - выдача агрегированной подписки (base64)
+```bash
+sudo systemctl status multisub --no-pager
+sudo journalctl -u multisub -n 120 --no-pager
+curl -I http://127.0.0.1:8000/
+sudo nginx -t
+sudo tail -n 120 /var/log/nginx/error.log
+```
 
-## Типовые проблемы
-
-1. `502 Bad Gateway`:
-- проверить `sudo systemctl status multisub`
-- проверить `sudo journalctl -u multisub -n 100 --no-pager`
-- проверить `sudo nginx -t`
-
-2. Пустой ответ по `/sub/<uuid>`:
-- проверить доступность исходных URL
-- убедиться, что источники возвращают 200
-- посмотреть логи сервиса (`journalctl`)
-
-3. Пользователи копируют неправильный адрес:
-- проверить значение `PUBLIC_BASE_URL` в systemd
-- после изменения выполнить `sudo systemctl daemon-reload && sudo systemctl restart multisub`
-
-## Обновление проекта на VDS
+## Update on VDS
 
 ```bash
 cd /opt/multisub
@@ -286,4 +251,3 @@ pip install -r requirements.txt
 .venv/bin/pytest -q
 sudo systemctl restart multisub
 ```
-end

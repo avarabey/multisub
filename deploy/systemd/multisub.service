@@ -8,7 +8,7 @@ Group=www-data
 WorkingDirectory=/opt/multisub
 Environment="PATH=/opt/multisub/.venv/bin"
 Environment="DATABASE_URL=sqlite:////opt/multisub/multisub.db"
-Environment="PUBLIC_BASE_URL=https://ffknd.ru"
+Environment="PUBLIC_BASE_URL=https://example.com"
 ExecStart=/opt/multisub/.venv/bin/gunicorn --workers 2 --bind 127.0.0.1:8000 app:app
 Restart=always
 RestartSec=3
