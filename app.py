@@ -17,6 +17,7 @@ DEFAULT_DB_PATH = os.path.join(BASE_DIR, "multisub.db")
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_DB_PATH}")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["PUBLIC_BASE_URL"] = os.getenv("PUBLIC_BASE_URL", "").strip()
 
 db = SQLAlchemy(app)
 
@@ -86,6 +87,13 @@ def normalize_subscription_payload(payload: str) -> list[str]:
     return _split_entries(source)
 
 
+def get_public_base_url() -> str:
+    configured = app.config.get("PUBLIC_BASE_URL", "").strip()
+    if configured:
+        return configured.rstrip("/")
+    return request.url_root.rstrip("/")
+
+
 class Multisub(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(db.String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
@@ -143,7 +151,7 @@ def generate_subscription_content(multisub: Multisub) -> str:
 @app.route("/")
 def index():
     multisubs = Multisub.query.order_by(Multisub.created_at.desc()).all()
-    return render_template("index.html", multisubs=multisubs)
+    return render_template("index.html", multisubs=multisubs, public_base_url=get_public_base_url())
 
 
 @app.route("/create", methods=["GET", "POST"])

@@ -10,6 +10,7 @@ from app import Multisub, Subscription, app, db
 def client():
     app.config["TESTING"] = True
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+    app.config["PUBLIC_BASE_URL"] = ""
     with app.app_context():
         db.drop_all()
         db.create_all()
@@ -73,3 +74,30 @@ def test_merges_base64_and_plain_sources(monkeypatch, client):
 
     decoded = base64.b64decode(resp.get_data(as_text=True)).decode("utf-8")
     assert decoded.splitlines() == ["vmess://a", "vmess://b", "vmess://c"]
+
+
+def test_index_uses_configured_public_base_url(client):
+    app.config["PUBLIC_BASE_URL"] = "https://ffknd.ru/"
+    with app.app_context():
+        ms = Multisub(title="public-url")
+        db.session.add(ms)
+        db.session.commit()
+        uid = ms.uuid
+
+    resp = client.get("/")
+    body = resp.get_data(as_text=True)
+    assert resp.status_code == 200
+    assert f"https://ffknd.ru/sub/{uid}" in body
+
+
+def test_index_falls_back_to_request_host(client):
+    with app.app_context():
+        ms = Multisub(title="request-host")
+        db.session.add(ms)
+        db.session.commit()
+        uid = ms.uuid
+
+    resp = client.get("/", base_url="http://203.0.113.10")
+    body = resp.get_data(as_text=True)
+    assert resp.status_code == 200
+    assert f"http://203.0.113.10/sub/{uid}" in body

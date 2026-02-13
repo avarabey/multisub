@@ -159,7 +159,7 @@
                     </div>
 
                     <div class="subscription-link">
-                        <input type="text" readonly value="{{ request.url_root.rstrip('/') }}/sub/{{ multisub.uuid }}">
+                        <input type="text" readonly value="{{ public_base_url }}/sub/{{ multisub.uuid }}">
                         <button class="btn-copy" onclick="copyToClipboard(this)">Копировать</button>
                     </div>
 
