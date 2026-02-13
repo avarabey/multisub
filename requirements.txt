@@ -1,0 +1,5 @@
+Flask>=2.3,<3
+Flask-SQLAlchemy>=3.0,<4
+SQLAlchemy>=2.0,<3
+httpx>=0.24
+pytest>=7.0

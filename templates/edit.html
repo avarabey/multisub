@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if multisub %}Редактировать{% else %}Создать{% endif %} подписку</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        header {
+            margin-bottom: 30px;
+        }
+        h1 {
+            font-size: 28px;
+            color: #333;
+        }
+        .btn-back {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #6c757d;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .btn-back:hover {
+            background: #5a6268;
+        }
+        .form-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+        .urls-section {
+            margin-bottom: 25px;
+        }
+        .urls-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 16px;
+        }
+        .url-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .url-item input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: monospace;
+        }
+        .url-item input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+        .btn-remove-url {
+            padding: 8px 12px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+        .btn-remove-url:hover {
+            background: #c82333;
+        }
+        .btn-add-url {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-bottom: 20px;
+            transition: background 0.3s;
+        }
+        .btn-add-url:hover {
+            background: #218838;
+        }
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        .btn-save {
+            flex: 1;
+            padding: 12px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        .btn-save:hover {
+            background: #0056b3;
+        }
+        .btn-cancel {
+            flex: 1;
+            padding: 12px 20px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 16px;
+            text-decoration: none;
+            text-align: center;
+            transition: background 0.3s;
+        }
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>{% if multisub %}✏️ Редактировать подписку{% else %}➕ Создать новую подписку{% endif %}</h1>
+            <a href="{{ url_for('index') }}" class="btn-back">← Вернуться к списку</a>
+        </header>
+
+        <div class="form-container">
+            <form method="POST" id="editForm">
+                <div class="form-group">
+                    <label for="title">Название подписки *</label>
+                    <input type="text" id="title" name="title" required value="{{ multisub.title if multisub else '' }}" placeholder="Например: Мои основные серверы">
+                    <div class="help-text">Название для идентификации подписки</div>
+                </div>
+
+                <div class="urls-section">
+                    <h3>Исходные подписки (URLs)</h3>
+                    <div id="urlsContainer">
+                        {% if multisub and multisub.subscriptions %}
+                            {% for sub in multisub.subscriptions %}
+                            <div class="url-item">
+                                <input type="text" name="urls[]" placeholder="https://example.com/sub/..." value="{{ sub.url }}">
+                                <button type="button" class="btn-remove-url" onclick="removeUrlField(this)">Удалить</button>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                        <div class="url-item">
+                            <input type="text" name="urls[]" placeholder="https://example.com/sub/...">
+                            <button type="button" class="btn-remove-url" onclick="removeUrlField(this)">Удалить</button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn-add-url" onclick="addUrlField()">+ Добавить подписку</button>
+                    <div class="help-text">Введите полные ссылки на исходные подписки (например, с панели 3x-ui)</div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-save">💾 Сохранить</button>
+                    <a href="{{ url_for('index') }}" class="btn-cancel">Отмена</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function addUrlField() {
+            const container = document.getElementById('urlsContainer');
+            const urlItem = document.createElement('div');
+            urlItem.className = 'url-item';
+            urlItem.innerHTML = `
+                <input type="text" name="urls[]" placeholder="https://example.com/sub/...">
+                <button type="button" class="btn-remove-url" onclick="removeUrlField(this)">Удалить</button>
+            `;
+            container.appendChild(urlItem);
+        }
+
+        function removeUrlField(btn) {
+            // Проверяем, что остаётся хотя бы одно поле
+            const container = document.getElementById('urlsContainer');
+            const items = container.querySelectorAll('.url-item');
+            if (items.length <= 1) {
+                alert('Должна быть хотя бы одна подписка!');
+                return;
+            }
+            btn.parentElement.remove();
+        }
+
+        document.getElementById('editForm').addEventListener('submit', function(e) {
+            const container = document.getElementById('urlsContainer');
+            const inputs = container.querySelectorAll('input[name="urls[]"]');
+            
+            // Проверяем, что хотя бы одно поле заполнено
+            let hasUrl = false;
+            inputs.forEach(input => {
+                if (input.value.trim()) {
+                    hasUrl = true;
+                }
+            });
+            
+            if (!hasUrl) {
+                e.preventDefault();
+                alert('Добавьте хотя бы одну подписку!');
+                return false;
+            }
+        });
+    </script>
+</body>
+</html>
