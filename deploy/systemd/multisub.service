@@ -1,0 +1,17 @@
+[Unit]
+Description=MultiSub Flask Service
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/multisub
+Environment="PATH=/opt/multisub/.venv/bin"
+Environment="DATABASE_URL=sqlite:////opt/multisub/multisub.db"
+Environment="PUBLIC_BASE_URL=https://ffknd.ru"
+ExecStart=/opt/multisub/.venv/bin/gunicorn --workers 2 --bind 127.0.0.1:8000 app:app
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -101,9 +101,16 @@ pip install -r requirements.txt
 
 Это значение влияет на ссылку, которую пользователи копируют в UI.
 
-### 6. systemd-сервис
+### 6. systemd-сервис (автозапуск)
 
-Создать файл `/etc/systemd/system/multisub.service`:
+В проекте уже есть шаблон: `deploy/systemd/multisub.service`.
+Скопируйте его:
+
+```bash
+sudo cp /opt/multisub/deploy/systemd/multisub.service /etc/systemd/system/multisub.service
+```
+
+Содержимое файла:
 
 ```ini
 [Unit]
@@ -131,7 +138,7 @@ WantedBy=multi-user.target
 Environment="PUBLIC_BASE_URL=http://<IP_ВАШЕЙ_VDS>"
 ```
 
-Выдать доступ и запустить:
+Выдать доступ, включить автозапуск и запустить:
 
 ```bash
 sudo chown -R www-data:www-data /opt/multisub
@@ -201,6 +208,40 @@ sudo certbot renew --dry-run
 ```
 
 Если работаете только по IP, проект будет доступен по HTTP (`http://<IP_ВАШЕЙ_VDS>`) и тоже полностью функционален.
+
+### 9. Периодический healthcheck с авто-перезапуском
+
+В проекте уже подготовлены файлы:
+
+- `scripts/healthcheck.sh`
+- `deploy/systemd/multisub-healthcheck.service`
+- `deploy/systemd/multisub-healthcheck.timer`
+
+Установка на сервер:
+
+```bash
+sudo cp /opt/multisub/scripts/healthcheck.sh /usr/local/bin/multisub-healthcheck.sh
+sudo chmod +x /usr/local/bin/multisub-healthcheck.sh
+
+sudo cp /opt/multisub/deploy/systemd/multisub-healthcheck.service /etc/systemd/system/multisub-healthcheck.service
+sudo cp /opt/multisub/deploy/systemd/multisub-healthcheck.timer /etc/systemd/system/multisub-healthcheck.timer
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now multisub-healthcheck.timer
+sudo systemctl status multisub-healthcheck.timer --no-pager
+```
+
+Что делает healthcheck:
+
+- Каждую минуту проверяет `http://127.0.0.1:8000/`.
+- Если сервис не отвечает, выполняет `systemctl restart multisub.service`.
+- Пишет события в `journald` с тегом `multisub-healthcheck`.
+
+Проверка логов:
+
+```bash
+sudo journalctl -u multisub-healthcheck.service -n 50 --no-pager
+```
 
 ## Проверка после деплоя
 

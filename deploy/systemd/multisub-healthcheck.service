@@ -1,0 +1,9 @@
+[Unit]
+Description=MultiSub periodic healthcheck and self-heal
+After=network-online.target multisub.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Environment="HEALTH_URL=http://127.0.0.1:8000/"
+ExecStart=/usr/local/bin/multisub-healthcheck.sh
